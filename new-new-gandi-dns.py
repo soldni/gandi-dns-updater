@@ -1,9 +1,20 @@
+#!/usr/bin/env -S uv run --script
+#
+# /// script
+# requires-python = ">=3.12"
+# dependencies = [
+#   "requests",
+#   "netifaces",
+# ]
+# ///
+
 #!/usr/bin/env python
 
 from __future__ import print_function, unicode_literals
 
 # built-in packages
 from argparse import ArgumentParser
+import os
 import sys
 import socket
 import json
@@ -64,13 +75,17 @@ def update_ip(new_ip, opts):
         root=ROOT_API, uuid=opts.domain_name
     )
 
-    config_resp = requests.get(config_url, headers={"X-Api-Key": opts.production_key})
+    config_resp = requests.get(
+        config_url, headers={"authorization": f"Bearer {opts.production_key}"}
+    )
 
     # raise error if 4xx or 5xx
     config_resp.raise_for_status()
 
     # get the response
     config = config_resp.json()
+
+    print(json.dumps(config), indent=4)
 
     a_config = None
     for entry in config:
@@ -94,7 +109,7 @@ def update_ip(new_ip, opts):
                 delete_url,
                 headers={
                     "Content-Type": "application/json",
-                    "X-Api-Key": opts.production_key,
+                    "authorization": f"Bearer {opts.production_key}",
                 },
                 data="{}",
             )
@@ -119,7 +134,10 @@ def update_ip(new_ip, opts):
 
     update_resp = requests.post(
         config_url,
-        headers={"Content-Type": "application/json", "X-Api-Key": opts.production_key},
+        headers={
+            "Content-Type": "application/json",
+            "authorization": f"Bearer {opts.production_key}",
+        },
         data=json.dumps(update_req_content),
     )
 
@@ -136,7 +154,9 @@ def update_ip(new_ip, opts):
 
 def main():
     ap = ArgumentParser()
-    ap.add_argument("-k", "--production-key", default=None)
+    ap.add_argument(
+        "-k", "--production-key", default=os.environ.get("GANDI_DNS_KEY", "")
+    )
     ap.add_argument("-d", "--domain-name", default=None)
     ap.add_argument("-a", "--a-name", default=None)
     ap.add_argument("-m", "--mode", default="remote", choices=["remote", "local"])
