@@ -85,8 +85,6 @@ def update_ip(new_ip, opts):
     # get the response
     config = config_resp.json()
 
-    print(json.dumps(config), indent=4)
-
     a_config = None
     for entry in config:
         if entry["rrset_type"] == "A" and entry["rrset_name"] == opts.a_name:
